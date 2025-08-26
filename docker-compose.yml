@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ip-matcher-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=pass
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ip-matcher-network
+
+  ip-matcher-server:
+    build: .
+    container_name: ip-matcher-server
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - PYTHONUNBUFFERED=1
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=user
+      - RABBITMQ_PASSWORD=pass
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    networks:
+      - ip-matcher-network
+
+  ip-matcher-client:
+    build: .
+    container_name: ip-matcher-client
+    depends_on:
+      - ip-matcher-server
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+    volumes:
+      - .:/app
+    networks:
+      - ip-matcher-network
+    command: sleep infinity  # Ждет ручного запуска
+
+volumes:
+  rabbitmq_data:
+    driver: local
+
+networks:
+  ip-matcher-network:
+    driver: bridge

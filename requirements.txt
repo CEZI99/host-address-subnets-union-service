@@ -1,0 +1,5 @@
+aio-pika
+protobuf
+grpcio-tools
+aiormq
+aiofiles
