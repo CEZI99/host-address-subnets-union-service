@@ -50,11 +50,15 @@ class AsyncIPMatcherServer:
 
         for subnet_str in subnets:
             try:
-                subnet = ipaddress.ip_network(subnet_str, strict=False)
+                # Всегда создаем сеть в строгом режиме для правильной нормализации
+                subnet = ipaddress.ip_network(subnet_str)
+
                 if host_ip in subnet and subnet.prefixlen > best_prefix_len:
                     best_subnet = subnet_str
                     best_prefix_len = subnet.prefixlen
-            except (ValueError, ipaddress.AddressValueError):
+
+            except (ValueError, ipaddress.AddressValueError) as e:
+                print(f"Invalid subnet {subnet_str}: {e}")
                 continue
 
         return best_subnet if best_subnet else "0"
