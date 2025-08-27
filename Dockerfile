@@ -12,16 +12,17 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Создаем папку proto и добавляем __init__.py
+RUN mkdir -p proto && touch proto/__init__.py
+
 # Копируем исходные файлы
 COPY . .
 
-# Копируем только .proto файл
-COPY proto/matcher.proto proto/
-
 # Компилируем protobuf
 RUN python -m grpc_tools.protoc \
-    -I=./proto \
-    --python_out=./proto \
-    ./proto/matcher.proto
+    -I=. \
+    --python_out=. \
+    proto/matcher.proto
+
 
 CMD ["python", "server.py"]

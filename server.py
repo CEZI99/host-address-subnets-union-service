@@ -13,14 +13,15 @@ class AsyncIPMatcherServer:
         self.running = False
         self.rabbit_user = os.getenv("RABBITMQ_USER")
         self.rabbit_pass = os.getenv("RABBITMQ_PASSWORD")
+        self.rabbitmq_host = os.getenv('RABBITMQ_HOST')
 
 
     async def connect(self):
         """Асинхронное подключение к RabbitMQ"""
         try:
             self.connection = await aio_pika.connect_robust(
-                f"amqp://{self.rabbit_user}:{self.rabbit_pass}@rabbitmq/",
-                timeout=10
+                f"amqp://{self.rabbit_user}:{self.rabbit_pass}@{self.rabbitmq_host}/",
+                timeout=3
             )
             self.channel = await self.connection.channel()
 
@@ -106,6 +107,8 @@ class AsyncIPMatcherServer:
                 for result in results:
                     if not isinstance(result, Exception) and result:
                         host, subnet = result
+                        print("HERE RES")
+                        print(result)
                         response.matches.append(HostSubnetPair(host=host, subnet=subnet))
 
                 # Отправляем ответ
@@ -118,7 +121,7 @@ class AsyncIPMatcherServer:
                     routing_key='match_responses'
                 )
 
-                print(f"✅ Processed {len(response.matches)} matches")
+                print(f"Processed {len(response.matches)} matches")
 
             except Exception as e:
                 print(f"Error processing message: {e}")
@@ -142,8 +145,8 @@ class AsyncIPMatcherServer:
         print("Connecting to RabbitMQ")
         connected = await self.connect()
         if not connected:
-            print("Failed to connect, retrying in 5 seconds")
-            await asyncio.sleep(5)
+            print("Failed to connect, retrying in 3 seconds")
+            await asyncio.sleep(3)
             await self.start()
             return
 

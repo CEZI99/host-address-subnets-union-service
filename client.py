@@ -14,30 +14,29 @@ class AsyncIPMatcherClient:
         self.response_queue = None
         self.rabbit_user = os.getenv("RABBITMQ_USER")
         self.rabbit_pass = os.getenv("RABBITMQ_PASSWORD")
+        self.rabbitmq_host = os.getenv('RABBITMQ_HOST')
 
     async def connect(self):
         """Асинхронное подключение к RabbitMQ"""
         try:
-            print("CONN HERE")
-            print(f"amqp://{self.rabbit_user}:{self.rabbit_pass}@localhost/")
             self.connection = await aio_pika.connect_robust(
-                f"amqp://{self.rabbit_user}:{self.rabbit_pass}@localhost/",
-                timeout=10
+                f"amqp://{self.rabbit_user}:{self.rabbit_pass}@{self.rabbitmq_host}/",
+                timeout=3
             )
             self.channel = await self.connection.channel()
-            
+
             # Объявляем очереди
             await self.channel.declare_queue('match_requests', durable=True)
             self.response_queue = await self.channel.declare_queue(
                 'match_responses', durable=True
             )
-            
+
             # Запускаем потребитель для ответов
             await self.response_queue.consume(self.on_response)
-            
+
             print("Connected to RabbitMQ successfully")
             return True
-            
+
         except Exception as e:
             print(f"Connection failed: {e}")
             return False
@@ -76,13 +75,13 @@ class AsyncIPMatcherClient:
         try:
             # Ждем ответа с таймаутом
             response_body = await asyncio.wait_for(future, timeout=timeout)
-            
+
             # Десериализуем ответ
             response = MatchResponse()
             response.ParseFromString(response_body)
-            
+
             return response
-            
+
         except asyncio.TimeoutError:
             print("Request timed out")
             raise
@@ -96,7 +95,7 @@ class AsyncIPMatcherClient:
             async with aiofiles.open(filename, 'r') as f:
                 content = await f.read()
                 addresses = [
-                    line.strip() for line in content.split('\n') 
+                    line.strip() for line in content.split('\n')
                     if line.strip() and not line.startswith('#')
                 ]
                 return addresses
@@ -109,10 +108,10 @@ class AsyncIPMatcherClient:
         try:
             lines = [f"{match.host} - {match.subnet}" for match in response.matches]
             content = '\n'.join(lines)
-            
+
             async with aiofiles.open(filename, 'w') as f:
                 await f.write(content)
-                
+
         except Exception as e:
             print(f"Error writing file: {e}")
             raise
@@ -123,13 +122,13 @@ class AsyncIPMatcherClient:
             # Чтение файла
             print(f"Read {input_file}")
             addresses = await self.read_file_async(input_file)
-            
+
             if not addresses:
                 print("No addresses found in input file")
                 return
-            
-            print(f"🔢 Found {len(addresses)} addresses")
-            
+
+            print(f"Found {len(addresses)} addresses")
+
             # Подключение к RabbitMQ
             connected = await self.connect()
             if not connected:
@@ -158,16 +157,16 @@ class AsyncIPMatcherClient:
         """Закрытие соединения"""
         if self.connection:
             await self.connection.close()
-        print("👋 Client disconnected")
+        print("Client disconnected")
 
 async def main():
     if len(sys.argv) != 3:
         print("Usage: python client.py <input_file> <output_file>")
         print("Example: python client.py input.txt output.txt")
         return
-    
+
     client = AsyncIPMatcherClient()
-    
+
     try:
         await client.process_file(sys.argv[1], sys.argv[2])
     except KeyboardInterrupt:

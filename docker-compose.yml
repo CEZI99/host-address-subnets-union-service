@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -14,9 +12,7 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_running"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      retries: 3
     networks:
       - ip-matcher-network
 
@@ -44,8 +40,8 @@ services:
       - ip-matcher-server
     environment:
       - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASSWORD=guest
+      - RABBITMQ_USER=user
+      - RABBITMQ_PASSWORD=pass
     volumes:
       - .:/app
     networks:
