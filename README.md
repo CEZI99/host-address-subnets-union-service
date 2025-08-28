@@ -1,14 +1,6 @@
 # host-address-subnets-union-service
 Сервис сопоставления адресов хостов и подсетей
 
-# Основные технологии:
-Python 3.11
-RabbitMQ
-Protocol Buffers
-Docker
-aio-pika(Асинхронный клиент RabbitMQ)
-aiormq(Асинхронная работа с RabbitMQ)
-
 # Поток данных:
 1. Клиент: input.txt → список адресов
 2. Клиент: список → Protobuf сериализация
