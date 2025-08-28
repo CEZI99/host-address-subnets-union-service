@@ -43,19 +43,19 @@ class AsyncIPMatcherServer:
             print(f"Connection failed: {e}")
             return False
 
-    def find_best_subnet_sync(self, host_ip, subnets):
-        """Синхронный поиск подсети (выполняется в thread pool)"""
+    def find_subnet(self, host_ip, subnets):
+        """Поиск подсети"""
         best_subnet = None
         best_prefix_len = -1
 
         for subnet_str in subnets:
             try:
-                # Всегда создаем сеть в строгом режиме для правильной нормализации
-                subnet = ipaddress.ip_network(subnet_str)
+                subnet = ipaddress.ip_network(subnet_str, strict=False)
 
                 if host_ip in subnet and subnet.prefixlen > best_prefix_len:
                     best_subnet = subnet_str
                     best_prefix_len = subnet.prefixlen
+                    print(best_subnet)
 
             except (ValueError, ipaddress.AddressValueError) as e:
                 print(f"Invalid subnet {subnet_str}: {e}")
@@ -69,7 +69,7 @@ class AsyncIPMatcherServer:
         try:
             host_ip = ipaddress.ip_address(host)
             best_subnet = await loop.run_in_executor(
-                self.executor, self.find_best_subnet_sync, host_ip, subnets
+                self.executor, self.find_subnet, host_ip, subnets
             )
             return (host, best_subnet)
         except (ValueError, ipaddress.AddressValueError):
@@ -111,8 +111,6 @@ class AsyncIPMatcherServer:
                 for result in results:
                     if not isinstance(result, Exception) and result:
                         host, subnet = result
-                        print("HERE RES")
-                        print(result)
                         response.matches.append(HostSubnetPair(host=host, subnet=subnet))
 
                 # Отправляем ответ

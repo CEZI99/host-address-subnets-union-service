@@ -46,7 +46,7 @@ services:
       - .:/app
     networks:
       - ip-matcher-network
-    command: sleep infinity  # Ждет ручного запуска
+    # command: sleep infinity
 
 volumes:
   rabbitmq_data:
