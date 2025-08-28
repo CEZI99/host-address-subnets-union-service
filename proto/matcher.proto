@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package ipmatcher;
+
+message HostSubnetPair {
+    string host = 1;
+    string subnet = 2;
+}
+
+message MatchRequest {
+    repeated string addresses = 1;
+}
+
+message MatchResponse {
+    repeated HostSubnetPair matches = 1;
+}
